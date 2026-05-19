@@ -12,7 +12,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from threading import Lock
+from threading import RLock
 from typing import Callable
 
 import numpy as np
@@ -62,7 +62,9 @@ REGISTRY: dict[str, ModelSpec] = {
     "ensemble_avg": ModelSpec("ensemble_avg", "ensemble"),
 }
 
-_lock = Lock()
+# RLock (not Lock) so the ensemble loader can recursively call
+# _get_predictor() for each component without self-deadlocking.
+_lock = RLock()
 _cache: dict[str, Callable[[np.ndarray], np.ndarray]] = {}
 
 
