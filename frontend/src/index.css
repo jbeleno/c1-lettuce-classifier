@@ -1,111 +1,87 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/* Tailwind v4 auto-scans .ts/.tsx/.html. Make it explicit to avoid relying
+   on heuristics — if a new file lands outside src/ we still want it picked. */
+@source "./**/*.{ts,tsx,html}";
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ─────────────────────────────────────────────────────────────────────────
+   Design tokens — inherited from C2 (slate-900 IDE-syntax palette) and
+   re-mapped to lettuce growth stages. Tailwind v4 reads CSS variables
+   declared in @theme; everything else is consumed via var(...) directly.
+   ───────────────────────────────────────────────────────────────────── */
+@theme {
+  /* Surfaces — whisper-quiet elevation, ~5% lightness per step */
+  --color-bg:            #0F172A;  /* page canvas (slate-900) */
+  --color-surface-1:     #1E293B;  /* default card surface */
+  --color-surface-2:     #334155;  /* elevated: dropdowns, hover */
+  --color-surface-inset: #0B1220;  /* inputs, code blocks — darker than bg */
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Borders — low opacity rgba blends with backgrounds; never harsh */
+  --color-border-soft:   rgb(148 163 184 / 0.10);
+  --color-border:        rgb(148 163 184 / 0.18);
+  --color-border-strong: rgb(148 163 184 / 0.28);
+  --color-ring-focus:    #38BDF8;
+
+  /* Text hierarchy — four tiers, not two */
+  --color-ink:           #F8FAFC;
+  --color-ink-2:         #CBD5E1;
+  --color-ink-3:         #94A3B8;
+  --color-ink-mute:      #64748B;
+
+  /* Class colors — the ONLY accents in the app. One accent per card. */
+  --color-class-empty:   #64748B;  /* slate — nothing growing */
+  --color-class-germ:    #A78BFA;  /* violet — keyword/early biological */
+  --color-class-young:   #FBBF24;  /* amber — warning/nascent */
+  --color-class-pod:     #38BDF8;  /* sky — developing canopy */
+  --color-class-ready:   #22C55E;  /* green — harvestable */
+
+  /* Typography */
+  --font-sans: "Inter", "Inter Tight", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Animation — fast micro, smooth easing, no bounce */
+  --duration-micro: 150ms;
+  --duration-page:  240ms;
+  --ease:           cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ─────────────────────────────────────────────────────────────────────── */
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+html, body, #root {
+  height: 100%;
+  margin: 0;
 }
 
 body {
-  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
+/* Focus ring — visible only for keyboard navigation, never on mouse click */
+:focus-visible {
+  outline: 2px solid var(--color-ring-focus);
+  outline-offset: 2px;
   border-radius: 4px;
-  color: var(--text-h);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* Reduced motion — respect the system preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Tabular numbers — every monospace block treats digits as tabular for
+   column-perfect alignment across rows */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Selection — uses the focus accent at low alpha */
+::selection {
+  background: rgb(56 189 248 / 0.30);
+  color: var(--color-ink);
 }
