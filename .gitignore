@@ -27,3 +27,8 @@ reports/
 
 # Backup archives (e.g. models_cnns.tar.gz)
 *.tar.gz
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

@@ -4,6 +4,7 @@
         eval-all ensemble \
         cv cv-mobilenet cv-efficientnet cv-resnet cv-vit cv-swin cv-smoke \
         diagrams mockups docs-pdf docs-docx docs \
+        frontend frontend-install frontend-build \
         test backend smoke clean
 
 UV ?= uv
@@ -82,6 +83,16 @@ cv-smoke:
 # ── Backend ──────────────────────────────────────────────────────
 backend:
 	$(UV) run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+
+# ── Frontend (React + Vite + Tailwind) ───────────────────────────
+frontend-install:
+	cd frontend && npm install
+
+frontend:
+	cd frontend && npm run dev
+
+frontend-build:
+	cd frontend && npm run build
 
 # ── Documentation ────────────────────────────────────────────────
 diagrams:
