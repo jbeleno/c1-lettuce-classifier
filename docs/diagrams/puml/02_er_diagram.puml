@@ -1,70 +1,84 @@
-@startuml
-!theme plain
+@startuml 02_er_diagram
+' Figure 2 — Entity-Relationship Diagram
+' Persistence layer:  predictions (Postgres) + split_assignments (CSV) + model_metadata (JSON)
+
 skinparam backgroundColor #0F172A
 skinparam shadowing false
-skinparam classFontColor #F8FAFC
-skinparam classFontStyle bold
-skinparam classHeaderBackgroundColor #1E293B
-skinparam classBackgroundColor #0B1220
-skinparam classBorderColor #334155
-skinparam ArrowColor #94A3B8
-skinparam ArrowFontColor #CBD5E1
+skinparam defaultFontName "Fira Sans"
+skinparam defaultFontColor #F8FAFC
+
+skinparam class {
+  BorderColor rgba(148,163,184,0.30)
+  BackgroundColor #1E293B
+  ArrowColor #38BDF8
+  FontColor #F8FAFC
+  AttributeFontColor #CBD5E1
+  AttributeFontName "Fira Code"
+  StereotypeFontColor #38BDF8
+}
 skinparam stereotypeCBackgroundColor #38BDF8
+skinparam noteFontColor #CBD5E1
+skinparam noteFontName "Fira Code"
+skinparam noteBackgroundColor #0B1220
+skinparam noteBorderColor #38BDF8
+skinparam ArrowFontColor #94A3B8
+skinparam ArrowFontName "Fira Code"
 
-entity "predictions" as P {
-  *id : serial <<PK>>
+hide circle
+hide methods
+
+title C1 Persistence — Entity-Relationship
+
+entity "predictions" as P <<table>> {
+  + id            : SERIAL  <<PK>>
   --
-  *created_at : timestamptz
-  *model : varchar(64)
-  *label : varchar(32)
-  *confidence : float
-  *probabilities : jsonb
-  *image_sha256 : varchar(64)
-   image_filename : varchar(255)
-  *image_width : int
-  *image_height : int
+    created_at     : TIMESTAMPTZ
+    model          : VARCHAR(64)
+    label          : VARCHAR(32)
+    confidence     : FLOAT
+    probabilities  : JSONB
+    image_sha256   : VARCHAR(64)
+    image_filename : VARCHAR(255)
+    image_width    : INT
+    image_height   : INT
 }
 
-entity "split_assignments\n(view of CSVs)" as S {
-  *filepath : text <<PK>>
+entity "split_assignments\n(view of CSVs)" as S <<file>> {
+  + filepath      : TEXT  <<PK>>
   --
-  *class : varchar(32)
-  *source_frame : varchar(64)
-  *split : enum(train,val,test)
+    class          : VARCHAR(32)
+    source_frame   : VARCHAR(64)
+    split          : ENUM(train,val,test)
 }
 
-entity "model_metadata\n(metadata.json)" as M {
-  *name : varchar(64) <<PK>>
+entity "model_metadata\n(metadata.json)" as M <<file>> {
+  + name          : VARCHAR(64)  <<PK>>
   --
-  *framework : enum(tf,torch,ensemble)
-  *test_accuracy : float
-  *best_val_accuracy : float
-  *macro_f1 : float
-  *classes : text[]
-  *trained_at : timestamptz
+    framework      : ENUM(tf,torch,ensemble)
+    test_accuracy  : FLOAT
+    best_val_accuracy : FLOAT
+    macro_f1       : FLOAT
+    classes        : TEXT[]
+    trained_at     : TIMESTAMPTZ
 }
 
-P }o--o| M : "FK on `model` —\nlogical reference"
+P }o--o| M : "FK on model\n(logical reference)"
 S }o--o| M : "training corpus\nused to fit"
 
 note bottom of P
   Persisted in PostgreSQL.
-  Indexes: created_at DESC,
-  label, model, image_sha256.
+  Indexes: created_at DESC, label, model, image_sha256.
 end note
 
 note bottom of S
-  Filesystem CSV at
-  data/splits/{train,val,test}.csv —
-  source of truth for train/val/test
-  membership. Group-aware on
-  source_frame to prevent leakage.
+  Filesystem CSV at data/splits/{train,val,test}.csv —
+  source of truth for train/val/test membership. Group-aware
+  on source_frame to prevent leakage.
 end note
 
 note bottom of M
-  Filesystem JSON at
-  models_saved/<name>/metadata.json.
-  Read by /models and /metrics.
+  Filesystem JSON at models_saved/<name>/metadata.json.
+  Read by GET /models and GET /metrics.
 end note
 
 @enduml

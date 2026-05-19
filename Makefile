@@ -3,7 +3,7 @@
         train-cnns train-transformers train-all \
         eval-all ensemble \
         cv cv-mobilenet cv-efficientnet cv-resnet cv-vit cv-swin cv-smoke \
-        diagrams mockups docs-pdf docs-docx docs \
+        diagrams mockups docs-pdf docs-docx docs slides \
         frontend frontend-install frontend-build \
         test backend smoke clean
 
@@ -122,6 +122,10 @@ docs-docx: diagrams mockups
 	  --resource-path=docs:docs/diagrams/png:docs/mockups:reports
 
 docs: docs-pdf
+
+slides:
+	mkdir -p docs/exports
+	$(UV) run python scripts/build_slides.py
 
 # ── Tests ────────────────────────────────────────────────────────
 test:

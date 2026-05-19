@@ -1,22 +1,32 @@
-@startuml
-!theme plain
+@startuml 06_architecture_models
+' Figure 6 — Per-backbone Architecture (shared transfer-learning topology)
+
 skinparam backgroundColor #0F172A
 skinparam shadowing false
-skinparam rectangleBackgroundColor #1E293B
-skinparam rectangleBorderColor #334155
-skinparam rectangleFontColor #F8FAFC
-skinparam ArrowColor #94A3B8
-skinparam ArrowFontColor #CBD5E1
+skinparam defaultFontName "Fira Sans"
+skinparam defaultFontColor #F8FAFC
+
+skinparam rectangle {
+  BorderColor rgba(148,163,184,0.30)
+  BackgroundColor #1E293B
+  FontColor #F8FAFC
+  RoundCorner 8
+}
+skinparam ArrowColor #38BDF8
+skinparam ArrowFontColor #94A3B8
+skinparam ArrowFontName "Fira Code"
+skinparam noteFontColor #CBD5E1
+skinparam noteFontName "Fira Code"
+skinparam noteBackgroundColor #0B1220
+skinparam noteBorderColor #38BDF8
 
 title Per-backbone architecture — shared transfer-learning topology
 
-rectangle "Input\n224 x 224 x 3" as IN #0B1220
+rectangle "Input\n224 × 224 × 3" as IN #0B1220
 
-rectangle "Preprocessing\n(model-specific)" as PP #0B1220 {
-  rectangle "[-1, 1] scale (MobileNet)\nor internal Rescaling+Norm\n(EfficientNet)\nor ImageNet mean BGR\n(ResNet)\nor [0,1] then ImageNet\nNormalize (ViT, Swin)" as PPN
-}
+rectangle "Preprocessing\n(backbone-specific)" as PP #0B1220
 
-rectangle "Pretrained backbone\n(ImageNet1k)" as BB #1E293B {
+rectangle "Pretrained backbone (ImageNet1k)" as BB {
   rectangle "MobileNetV3-Small\n~2.5M params" as B1
   rectangle "EfficientNet-B0\n~5.3M params" as B2
   rectangle "ResNet50\n~25.6M params" as B3
@@ -24,13 +34,10 @@ rectangle "Pretrained backbone\n(ImageNet1k)" as BB #1E293B {
   rectangle "Swin-Tiny\n~28M params" as B5
 }
 
-rectangle "Global pooling /\nclass-token" as POOL #0B1220
-
-rectangle "Dropout\np = 0.3 (TF only)" as DO #0B1220
-
-rectangle "Linear head\nDense(5) softmax (TF)\nLinear(5) (Torch)" as HEAD #38BDF8
-
-rectangle "Output\n[empty_pod, germination, young, pod, Ready]" as OUT #22C55E
+rectangle "Global pooling\n/ class-token" as POOL #0B1220
+rectangle "Dropout p = 0.3\n(TF only)" as DO #0B1220
+rectangle "Dense(5) softmax · dtype=float32" as HEAD
+rectangle "Output\n[empty_pod, germination, young, pod, Ready]" as OUT
 
 IN --> PP
 PP --> BB
@@ -41,20 +48,19 @@ HEAD --> OUT
 
 note right of HEAD
   Last layer dtype=float32 in TF
-  (numerically stable softmax + loss
-  even when mixed precision is on).
+  so softmax + loss stay numerically
+  stable when mixed precision is on.
 
-  TF backbones use a two-phase fit:
+  TF backbones use two-phase fit:
     1. Freeze backbone, train head
        for TF_HEAD_EPOCHS epochs.
-    2. Unfreeze top 30% of backbone
-       (BN stays frozen), train at
-       lr = 1e-5 for TF_FT_EPOCHS
-       epochs.
+    2. Unfreeze top 30% of backbone,
+       BN stays frozen, train at
+       lr=1e-5 for TF_FT_EPOCHS epochs.
 
   Torch backbones train end-to-end
   for TORCH_EPOCHS epochs with
-  AdamW(lr=3e-5) and AMP on CUDA.
+  AdamW(lr=3e-5), AMP on CUDA.
 end note
 
 @enduml

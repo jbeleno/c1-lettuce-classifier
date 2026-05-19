@@ -1,27 +1,35 @@
-@startuml
-!theme plain
+@startuml 01_use_cases
+' Figure 1 — Use Case Diagram (UML)
+' Component: C1 Lettuce Growth-Stage Classifier
+' Actors: Operator, Agronomist, System Admin
+
 skinparam backgroundColor #0F172A
-skinparam defaultTextAlignment center
 skinparam shadowing false
+skinparam defaultFontName "Fira Sans"
+skinparam defaultFontColor #F8FAFC
 
 skinparam actor {
-  BackgroundColor #1E293B
   BorderColor #94A3B8
+  BackgroundColor #1E293B
   FontColor #F8FAFC
 }
 skinparam usecase {
+  BorderColor #94A3B8
   BackgroundColor #1E293B
-  BorderColor #38BDF8
   FontColor #F8FAFC
-  ArrowColor #94A3B8
+  ArrowColor #38BDF8
 }
-skinparam ArrowColor #94A3B8
-skinparam ArrowFontColor #CBD5E1
-skinparam rectangle {
+skinparam ArrowColor #38BDF8
+skinparam ArrowFontColor #94A3B8
+skinparam ArrowFontName "Fira Code"
+skinparam package {
+  BorderColor rgba(148,163,184,0.30)
   BackgroundColor #0F172A
-  BorderColor #334155
-  FontColor #F8FAFC
+  FontColor #94A3B8
 }
+skinparam noteFontColor #94A3B8
+skinparam noteBackgroundColor #1E293B
+skinparam noteBorderColor rgba(148,163,184,0.30)
 
 left to right direction
 
@@ -29,7 +37,7 @@ actor "Greenhouse\nOperator" as Op
 actor "Agronomist" as Agro
 actor "System Admin" as Admin
 
-rectangle "C1 — Lettuce Growth-Stage Classifier" {
+package "C1 — Lettuce Growth-Stage Classifier" {
   usecase "Capture / upload\npod image" as UC1
   usecase "Predict growth\nstage" as UC2
   usecase "Choose a specific\nmodel" as UC3

@@ -1,50 +1,68 @@
-@startuml
-!theme plain
+@startuml 05_architecture_pipeline
+' Figure 5 — End-to-end Pipeline Architecture
+' From Roboflow export down to a served prediction.
+
 skinparam backgroundColor #0F172A
 skinparam shadowing false
-skinparam ArrowColor #94A3B8
-skinparam ArrowFontColor #CBD5E1
-skinparam componentBackgroundColor #1E293B
-skinparam componentBorderColor #334155
-skinparam componentFontColor #F8FAFC
-skinparam nodeBackgroundColor #0B1220
-skinparam nodeBorderColor #334155
-skinparam nodeFontColor #F8FAFC
-skinparam databaseBackgroundColor #0B1220
-skinparam databaseBorderColor #334155
-skinparam databaseFontColor #F8FAFC
-skinparam cloudBackgroundColor #1E293B
-skinparam cloudBorderColor #334155
-skinparam cloudFontColor #F8FAFC
+skinparam defaultFontName "Fira Sans"
+skinparam defaultFontColor #F8FAFC
 
-title End-to-end pipeline — from Roboflow export to live prediction
+skinparam rectangle {
+  BorderColor rgba(148,163,184,0.30)
+  BackgroundColor #1E293B
+  FontColor #F8FAFC
+  RoundCorner 8
+}
+skinparam database {
+  BorderColor rgba(148,163,184,0.30)
+  BackgroundColor #0B1220
+  FontColor #F8FAFC
+}
+skinparam node {
+  BorderColor rgba(148,163,184,0.30)
+  BackgroundColor #0F172A
+  FontColor #94A3B8
+}
+skinparam cloud {
+  BorderColor rgba(148,163,184,0.30)
+  BackgroundColor #1E293B
+  FontColor #F8FAFC
+}
+skinparam ArrowColor #38BDF8
+skinparam ArrowFontColor #94A3B8
+skinparam ArrowFontName "Fira Code"
+skinparam noteFontColor #94A3B8
+skinparam noteBackgroundColor #1E293B
+skinparam noteBorderColor rgba(148,163,184,0.30)
+
+title End-to-end pipeline — Roboflow → trained artifacts → live prediction
 
 cloud "Roboflow\nUniverse" as Cloud
 
-database "Raw dataset\nlettuce_pallets\n(19,721 crops, 5 classes)" as Raw
+database "Raw dataset\nlettuce_pallets\n19,721 crops · 5 classes" as Raw
 
-node "Data ingest" as Ingest #1E293B {
-  component "ingest.py\nsymlink + validate" as I1
-  component "preprocess.py\nparse _classes.csv\none-hot -> single label" as I2
-  component "split.py\nstratified group k-fold peel\n70/15/15  seed=42" as I3
+node "Data ingest" as Ingest {
+  rectangle "ingest.py\nsymlink + validate" as I1
+  rectangle "preprocess.py\nparse _classes.csv\none-hot -> single label" as I2
+  rectangle "split.py\nstratified group k-fold peel\n70/15/15 · seed=42" as I3
 }
 
 database "Reproducibility CSVs\ndata/splits/*.csv" as Splits
 
-node "Training (offline)" as Train #1E293B {
-  component "MobileNetV3-Small\n(TensorFlow)" as M1
-  component "EfficientNet-B0\n(TensorFlow)" as M2
-  component "ResNet50\n(TensorFlow)" as M3
-  component "ViT-B/16\n(PyTorch)" as M4
-  component "Swin-Tiny\n(PyTorch)" as M5
-  component "Soft-voting\nensemble" as M6
+node "Training (offline)" as Train {
+  rectangle "MobileNetV3-Small\n(TensorFlow)" as M1
+  rectangle "EfficientNet-B0\n(TensorFlow)" as M2
+  rectangle "ResNet50\n(TensorFlow)" as M3
+  rectangle "ViT-B/16\n(PyTorch)" as M4
+  rectangle "Swin-Tiny\n(PyTorch)" as M5
+  rectangle "Soft-voting\nensemble" as M6
 }
 
 database "models_saved/<name>/\nmodel.{keras,pt}\nmetadata.json\ntest_probs.parquet" as Saved
 
-node "Online serving" as Serve #1E293B {
-  component "src.inference\nlazy load + cache" as Inf
-  component "FastAPI\n4 routers" as API
+node "Online serving" as Serve {
+  rectangle "src.inference\nlazy load + cache" as Inf
+  rectangle "FastAPI\n4 routers" as API
 }
 
 database "PostgreSQL\npredictions table" as PG
@@ -52,7 +70,6 @@ database "PostgreSQL\npredictions table" as PG
 actor "Operator" as Op
 
 Cloud --> Raw : Roboflow SDK / ZIP
-
 Raw --> I1
 I1 --> I2
 I2 --> I3
@@ -71,7 +88,7 @@ M5 --> Saved
 Saved --> M6 : test_probs.parquet
 M6 --> Saved
 
-Saved --> Inf : load.keras / .pt / .json
+Saved --> Inf : load .keras / .pt / .json
 Inf --> API : predict()
 API --> PG : INSERT prediction
 API --> Op : JSON response
