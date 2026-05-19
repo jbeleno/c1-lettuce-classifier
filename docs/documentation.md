@@ -272,7 +272,7 @@ The system shall:
 
 ## 6.3 Use Case Diagram
 
-![Use case diagram — actors and capabilities](diagrams/png/01_use_cases.png){ width=85% }
+![Use case diagram — actors and capabilities](diagrams/png/01_use_cases.png){ height=5.5in }
 
 # 7. Data Dictionary and Entity-Relationship Model
 
@@ -571,7 +571,7 @@ green at the time of submission.
 
 ## 12.1 End-to-end pipeline
 
-![End-to-end pipeline — from Roboflow export to live prediction](diagrams/png/05_architecture_pipeline.png){ width=85% }
+![End-to-end pipeline — from Roboflow export to live prediction](diagrams/png/05_architecture_pipeline.png){ height=5.5in }
 
 The pipeline has three logical halves:
 
