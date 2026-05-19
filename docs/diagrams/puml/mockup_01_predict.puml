@@ -1,0 +1,35 @@
+@startsalt
+{+
+{T
++ <b>C1 — Hydroponic Lettuce Classifier</b>
++ <i>predict</i>  history  metrics  models
+}
+{
+  <b>Model</b>: { swin_t | "ensemble_avg                            " | v }
+  ----
+  <b>Drop an image of a pod here</b>
+  +-----------------------------------------------------+
+  |                                                     |
+  |              📷  click or drag a .jpg               |
+  |              from disk or webcam                    |
+  |                                                     |
+  +-----------------------------------------------------+
+  { [Browse...] | [Use webcam] }
+  ----
+  <b>Prediction</b>                                         42 ms
+  ┌────────────────────┐
+  │  germination       │   ← violet chip = predicted class
+  │  98.21 %           │
+  └────────────────────┘
+  ----
+  <b>Class probabilities</b>
+  empty_pod    | <0.001
+  germination  | ████████████████████ 0.982
+  young        | █                    0.018
+  pod          |                      <0.001
+  Ready        |                      <0.001
+  ----
+  <i>Image SHA-256:  3e902b…57d0a4ef     224 x 224 px</i>
+}
+}
+@endsalt

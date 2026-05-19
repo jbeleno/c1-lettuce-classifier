@@ -1,0 +1,28 @@
+@startsalt
+{+
+{T
++ <b>C1 — Hydroponic Lettuce Classifier</b>
++ predict  history  metrics  <i>models</i>
+}
+{
+  <b>Trained models on disk</b>
+  +------------------------+------------+---------+----------+
+  | name                   | framework  | test_ac | macro_f1 |
+  +------------------------+------------+---------+----------+
+  | • mobilenet_v3_small   | tf         | 0.883   | 0.886    |
+  | • efficientnet_b0      | tf         | 0.894   | 0.893    |
+  | • resnet50             | tf         | 0.910   | 0.906    |
+  | • vit_b_16             | torch      | 0.936   | 0.928    |
+  | • swin_t               | torch      | 0.939   | 0.932    |
+  | • ensemble_avg         | ensemble   | 0.936   | 0.932    |
+  +------------------------+------------+---------+----------+
+  ----
+  <b>Selected model</b>: swin_t
+  Classes: [ empty_pod | germination | young | pod | Ready ]
+  Artifact path: models_saved/swin_t/model.pt
+  Trained: 2026-05-18, 8 epochs, AdamW(lr=3e-5), weight_decay=1e-4
+  ----
+  [ Set as default ]   [ Warm-up cache ]   [ Reload from disk ]
+}
+}
+@endsalt

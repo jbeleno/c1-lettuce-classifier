@@ -1,0 +1,23 @@
+@startsalt
+{+
+{T
++ <b>C1 — Hydroponic Lettuce Classifier</b>
++ predict  <i>history</i>  metrics  models
+}
+{
+  <b>Filter</b>
+  Label  : { "any                       " | v }      Model : { "any         " | v }      Limit : "50"
+  ----
+  <b>Recent predictions</b>
+  +----+----------------------+----------+-------+---------------------+--------------------+
+  | #  | when                 | model    | conf  | label               | image              |
+  +----+----------------------+----------+-------+---------------------+--------------------+
+  | 3  | 03:27:21Z            | ensemble | 0.982 | • germination       | 100_0_165...0a.jpg |
+  | 2  | 03:27:20Z            | swin_t   | 1.000 | • germination       | 100_0_165...0a.jpg |
+  | 1  | 03:27:06Z            | mobilenet| 0.978 | • germination       | 100_0_165...0a.jpg |
+  +----+----------------------+----------+-------+---------------------+--------------------+
+  ----
+  <i>Rows are persisted in PostgreSQL. Click a row to see the full probability vector.</i>
+}
+}
+@endsalt

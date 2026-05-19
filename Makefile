@@ -3,6 +3,7 @@
         train-cnns train-transformers train-all \
         eval-all ensemble \
         cv cv-mobilenet cv-efficientnet cv-resnet cv-vit cv-swin cv-smoke \
+        diagrams mockups docs-pdf docs-docx docs \
         test backend smoke clean
 
 UV ?= uv
@@ -81,6 +82,35 @@ cv-smoke:
 # ── Backend ──────────────────────────────────────────────────────
 backend:
 	$(UV) run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+
+# ── Documentation ────────────────────────────────────────────────
+diagrams:
+	cd docs/diagrams && plantuml -tpng -o ../png puml/01_use_cases.puml \
+	  puml/02_er_diagram.puml puml/03_class_offline.puml \
+	  puml/04_class_online.puml puml/05_architecture_pipeline.puml \
+	  puml/06_architecture_models.puml puml/07_architecture_ensemble.puml
+
+mockups:
+	cd docs/diagrams && plantuml -tpng -o ../mockups \
+	  puml/mockup_01_predict.puml puml/mockup_02_history.puml \
+	  puml/mockup_03_metrics.puml puml/mockup_04_models.puml
+
+docs-pdf: diagrams mockups
+	mkdir -p docs/exports
+	pandoc docs/documentation.md \
+	  -o docs/exports/documentation.pdf \
+	  --toc \
+	  --pdf-engine=typst \
+	  --resource-path=docs:docs/diagrams/png:docs/mockups:reports
+
+docs-docx: diagrams mockups
+	mkdir -p docs/exports
+	pandoc docs/documentation.md \
+	  -o docs/exports/documentation.docx \
+	  --toc \
+	  --resource-path=docs:docs/diagrams/png:docs/mockups:reports
+
+docs: docs-pdf
 
 # ── Tests ────────────────────────────────────────────────────────
 test:

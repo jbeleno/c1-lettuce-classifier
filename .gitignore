@@ -24,3 +24,6 @@ reports/
 # Cache
 .pytest_cache/
 .ruff_cache/
+
+# Backup archives (e.g. models_cnns.tar.gz)
+*.tar.gz

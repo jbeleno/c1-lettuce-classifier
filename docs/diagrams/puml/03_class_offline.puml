@@ -1,0 +1,110 @@
+@startuml
+!theme plain
+skinparam backgroundColor #0F172A
+skinparam shadowing false
+skinparam classFontColor #F8FAFC
+skinparam classHeaderBackgroundColor #1E293B
+skinparam classBackgroundColor #0B1220
+skinparam classBorderColor #334155
+skinparam classAttributeFontColor #CBD5E1
+skinparam ArrowColor #94A3B8
+skinparam ArrowFontColor #CBD5E1
+skinparam packageBackgroundColor #0F172A
+skinparam packageBorderColor #334155
+skinparam packageFontColor #F8FAFC
+
+title Offline pipeline — data ingest, training, ensemble
+
+package "src.data" #1E293B {
+  class IngestStep {
+    + main() : Path
+    - link_symlink(target)
+    - validate_split_dirs()
+  }
+  class PreprocessStep {
+    + main() : DataFrame
+    - load_split(split) : DataFrame
+    - assert_single_label_per_row()
+  }
+  class SplitStep {
+    + main() : Dict[str, DataFrame]
+    - group_aware_kfold_peel(frac)
+    - assert_no_source_frame_leakage()
+  }
+  class ReportStep {
+    + main() : Path
+    - render_class_histogram()
+  }
+}
+
+package "src.models" #1E293B {
+  abstract class BaseTrainer {
+    + build_model() : Model
+    + main(smoke: bool)
+  }
+  class MobileNetV3Trainer
+  class EfficientNetB0Trainer
+  class ResNet50Trainer
+  class ViTB16Trainer
+  class SwinTTrainer
+  class EnsembleAvg {
+    + main() : dict
+    - load_test_probs(name) : DataFrame
+  }
+
+  BaseTrainer <|-- MobileNetV3Trainer
+  BaseTrainer <|-- EfficientNetB0Trainer
+  BaseTrainer <|-- ResNet50Trainer
+  BaseTrainer <|-- ViTB16Trainer
+  BaseTrainer <|-- SwinTTrainer
+}
+
+package "src.models._tf_lib" #1E293B {
+  class TFLib {
+    + load_splits(preprocess, smoke) : Tuple
+    + class_weights() : Dict[int, float]
+    + make_callbacks(name) : List
+    + fit_transfer(model, base, ...) : History
+    + evaluate_and_save(model, ...) : dict
+    - _maybe_enable_mixed_precision() : bool
+  }
+}
+
+package "src.models._torch_lib" #1E293B {
+  class TorchLib {
+    + load_splits(smoke) : Tuple
+    + class_weight_tensor(device) : Tensor
+    + train_torch_model(model, ...) : Dict
+    + evaluate_and_save_torch(model, ...) : dict
+    + select_device() : torch.device
+    + mixed_precision_enabled(device) : bool
+  }
+}
+
+package "src.cv" #1E293B {
+  class CrossValidator {
+    + cross_validate(cfg: CVConfig) : dict
+    - _run_fold_tf(cfg, train_df, val_df, i)
+    - _run_fold_torch(cfg, train_df, val_df, i)
+    - _summarise(per_fold) : dict
+  }
+}
+
+IngestStep --> PreprocessStep : produces input for
+PreprocessStep --> SplitStep : produces input for
+SplitStep --> ReportStep : produces input for
+SplitStep --> CrossValidator : reads all.csv
+
+MobileNetV3Trainer --> TFLib
+EfficientNetB0Trainer --> TFLib
+ResNet50Trainer --> TFLib
+ViTB16Trainer --> TorchLib
+SwinTTrainer --> TorchLib
+
+MobileNetV3Trainer ..> EnsembleAvg : test_probs.parquet
+EfficientNetB0Trainer ..> EnsembleAvg : test_probs.parquet
+ResNet50Trainer ..> EnsembleAvg : test_probs.parquet
+ViTB16Trainer ..> EnsembleAvg : test_probs.parquet
+SwinTTrainer ..> EnsembleAvg : test_probs.parquet
+
+@enduml

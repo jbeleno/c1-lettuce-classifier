@@ -1,0 +1,62 @@
+@startuml
+!theme plain
+skinparam backgroundColor #0F172A
+skinparam defaultTextAlignment center
+skinparam shadowing false
+
+skinparam actor {
+  BackgroundColor #1E293B
+  BorderColor #94A3B8
+  FontColor #F8FAFC
+}
+skinparam usecase {
+  BackgroundColor #1E293B
+  BorderColor #38BDF8
+  FontColor #F8FAFC
+  ArrowColor #94A3B8
+}
+skinparam ArrowColor #94A3B8
+skinparam ArrowFontColor #CBD5E1
+skinparam rectangle {
+  BackgroundColor #0F172A
+  BorderColor #334155
+  FontColor #F8FAFC
+}
+
+left to right direction
+
+actor "Greenhouse\nOperator" as Op
+actor "Agronomist" as Agro
+actor "System Admin" as Admin
+
+rectangle "C1 — Lettuce Growth-Stage Classifier" {
+  usecase "Capture / upload\npod image" as UC1
+  usecase "Predict growth\nstage" as UC2
+  usecase "Choose a specific\nmodel" as UC3
+  usecase "Use the\nensemble" as UC4
+  usecase "Review prediction\nhistory" as UC5
+  usecase "Filter history by\nlabel or model" as UC6
+  usecase "Compare model\nmetrics" as UC7
+  usecase "List trained\nmodels" as UC8
+  usecase "Maintain the\ntrained models" as UC9
+}
+
+Op --> UC1
+Op --> UC2
+Op --> UC5
+
+Agro --> UC2
+Agro --> UC3
+Agro --> UC4
+Agro --> UC5
+Agro --> UC6
+Agro --> UC7
+
+Admin --> UC8
+Admin --> UC9
+
+UC2 .> UC1 : <<include>>
+UC4 .> UC2 : <<extend>>
+UC3 .> UC2 : <<extend>>
+UC6 .> UC5 : <<extend>>
+@enduml

@@ -1,0 +1,123 @@
+@startuml
+!theme plain
+skinparam backgroundColor #0F172A
+skinparam shadowing false
+skinparam classFontColor #F8FAFC
+skinparam classHeaderBackgroundColor #1E293B
+skinparam classBackgroundColor #0B1220
+skinparam classBorderColor #334155
+skinparam classAttributeFontColor #CBD5E1
+skinparam ArrowColor #94A3B8
+skinparam ArrowFontColor #CBD5E1
+skinparam packageBackgroundColor #0F172A
+skinparam packageBorderColor #334155
+skinparam packageFontColor #F8FAFC
+
+title Online pipeline — FastAPI backend and inference
+
+package "backend" #1E293B {
+  class FastAPIApp {
+    + lifespan(app)
+    + healthz()
+  }
+  class PredictRouter {
+    + predict_endpoint(file, model, db) : PredictionResponse
+    - _pick_default_model() : str
+  }
+  class HistoryRouter {
+    + list_predictions(limit, label, model, db) : List[PredictionRow]
+  }
+  class MetricsRouter {
+    + metrics() : MetricsResponse
+  }
+  class ModelsRouter {
+    + list_models() : List[ModelInfo]
+  }
+}
+
+package "backend.db" #1E293B {
+  class Engine
+  class SessionLocal
+  class Base
+  class DbHelpers {
+    + init_db()
+    + get_db()
+  }
+}
+
+package "backend.models" #1E293B {
+  class PredictionRecord {
+    + id: int <<PK>>
+    + created_at: datetime
+    + model: str
+    + label: str
+    + confidence: float
+    + probabilities: dict
+    + image_sha256: str
+    + image_filename: str (nullable)
+    + image_width: int
+    + image_height: int
+  }
+}
+
+package "backend.schemas" #1E293B {
+  class PredictionResponse
+  class PredictionRow
+  class ModelInfo
+  class MetricsResponse
+  class MetricsRow
+}
+
+package "src.inference" #1E293B {
+  class Prediction {
+    + label: str
+    + confidence: float
+    + probabilities: Dict[str, float]
+    + model: str
+    + to_dict() : dict
+  }
+  class ModelSpec {
+    + name: str
+    + framework: str
+    + backbone: Optional[str]
+  }
+  class InferenceRegistry {
+    - _cache: Dict[str, Callable]
+    - _lock: RLock
+    + REGISTRY: Dict[str, ModelSpec]
+    + predict(image, model_name) : Prediction
+    + available_models() : List[str]
+    + model_metadata(name) : Optional[dict]
+    + warmup(names)
+    - _get_predictor(name) : Callable
+    - _load_tf_predictor(name)
+    - _load_torch_predictor(name, backbone)
+    - _load_ensemble_predictor()
+  }
+}
+
+FastAPIApp *-- PredictRouter
+FastAPIApp *-- HistoryRouter
+FastAPIApp *-- MetricsRouter
+FastAPIApp *-- ModelsRouter
+
+PredictRouter --> InferenceRegistry : predict(image, model)
+PredictRouter --> PredictionRecord : write row
+PredictRouter --> PredictionResponse
+
+HistoryRouter --> PredictionRecord : select rows
+HistoryRouter --> PredictionRow
+
+ModelsRouter --> InferenceRegistry : available_models()
+ModelsRouter --> ModelInfo
+
+MetricsRouter --> MetricsResponse
+
+InferenceRegistry --> Prediction : produces
+InferenceRegistry ..> ModelSpec
+
+PredictionRecord --|> Base
+Engine ..> Base : create_all()
+SessionLocal --> Engine
+
+@enduml

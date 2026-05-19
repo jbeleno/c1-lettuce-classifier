@@ -1,0 +1,32 @@
+@startsalt
+{+
+{T
++ <b>C1 — Hydroponic Lettuce Classifier</b>
++ predict  history  <i>metrics</i>  models
+}
+{
+  <b>Model comparison</b> — held-out test set (15 % of 19,721 crops)
+  +-------------------+-------+----------+----------+----------+--------+
+  | model             | acc   | macro F1 | macro P  | macro R  | val.   |
+  +-------------------+-------+----------+----------+----------+--------+
+  | • swin_t          | 0.939 | 0.932    | 0.930    | 0.934    | 0.940  |
+  | • ensemble_avg    | 0.936 | 0.932    | 0.926    | 0.941    | —      |
+  | • vit_b_16        | 0.936 | 0.928    | 0.931    | 0.926    | 0.943  |
+  | • resnet50        | 0.910 | 0.906    | 0.898    | 0.917    | 0.904  |
+  | • efficientnet_b0 | 0.894 | 0.893    | 0.881    | 0.918    | 0.889  |
+  | • mobilenet_v3    | 0.883 | 0.886    | 0.875    | 0.902    | 0.883  |
+  +-------------------+-------+----------+----------+----------+--------+
+  ----
+  <b>Confusion matrix</b> — { "swin_t                                 " | v }
+  .            empty_pod  germination  young  pod  Ready
+  empty_pod  [    218         5         2      1     1  ]
+  germination[     4       898        37      4     3  ]
+  young      [     2        18      790     30     5  ]
+  pod        [     1         6        24    472     9  ]
+  Ready      [     0         1         3     12   271  ]
+  ----
+  <i>Ensemble wins macro-recall (0.941) — the metric that matters most when
+  Ready and empty_pod (the rarest classes) are decision-critical.</i>
+}
+}
+@endsalt

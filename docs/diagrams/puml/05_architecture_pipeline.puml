@@ -1,0 +1,80 @@
+@startuml
+!theme plain
+skinparam backgroundColor #0F172A
+skinparam shadowing false
+skinparam ArrowColor #94A3B8
+skinparam ArrowFontColor #CBD5E1
+skinparam componentBackgroundColor #1E293B
+skinparam componentBorderColor #334155
+skinparam componentFontColor #F8FAFC
+skinparam nodeBackgroundColor #0B1220
+skinparam nodeBorderColor #334155
+skinparam nodeFontColor #F8FAFC
+skinparam databaseBackgroundColor #0B1220
+skinparam databaseBorderColor #334155
+skinparam databaseFontColor #F8FAFC
+skinparam cloudBackgroundColor #1E293B
+skinparam cloudBorderColor #334155
+skinparam cloudFontColor #F8FAFC
+
+title End-to-end pipeline — from Roboflow export to live prediction
+
+cloud "Roboflow\nUniverse" as Cloud
+
+database "Raw dataset\nlettuce_pallets\n(19,721 crops, 5 classes)" as Raw
+
+node "Data ingest" as Ingest #1E293B {
+  component "ingest.py\nsymlink + validate" as I1
+  component "preprocess.py\nparse _classes.csv\none-hot -> single label" as I2
+  component "split.py\nstratified group k-fold peel\n70/15/15  seed=42" as I3
+}
+
+database "Reproducibility CSVs\ndata/splits/*.csv" as Splits
+
+node "Training (offline)" as Train #1E293B {
+  component "MobileNetV3-Small\n(TensorFlow)" as M1
+  component "EfficientNet-B0\n(TensorFlow)" as M2
+  component "ResNet50\n(TensorFlow)" as M3
+  component "ViT-B/16\n(PyTorch)" as M4
+  component "Swin-Tiny\n(PyTorch)" as M5
+  component "Soft-voting\nensemble" as M6
+}
+
+database "models_saved/<name>/\nmodel.{keras,pt}\nmetadata.json\ntest_probs.parquet" as Saved
+
+node "Online serving" as Serve #1E293B {
+  component "src.inference\nlazy load + cache" as Inf
+  component "FastAPI\n4 routers" as API
+}
+
+database "PostgreSQL\npredictions table" as PG
+
+actor "Operator" as Op
+
+Cloud --> Raw : Roboflow SDK / ZIP
+
+Raw --> I1
+I1 --> I2
+I2 --> I3
+I3 --> Splits
+
+Splits --> M1
+Splits --> M2
+Splits --> M3
+Splits --> M4
+Splits --> M5
+M1 --> Saved
+M2 --> Saved
+M3 --> Saved
+M4 --> Saved
+M5 --> Saved
+Saved --> M6 : test_probs.parquet
+M6 --> Saved
+
+Saved --> Inf : load.keras / .pt / .json
+Inf --> API : predict()
+API --> PG : INSERT prediction
+API --> Op : JSON response
+Op --> API : POST /predict (image)
+
+@enduml

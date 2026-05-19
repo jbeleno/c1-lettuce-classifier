@@ -1,0 +1,70 @@
+@startuml
+!theme plain
+skinparam backgroundColor #0F172A
+skinparam shadowing false
+skinparam classFontColor #F8FAFC
+skinparam classFontStyle bold
+skinparam classHeaderBackgroundColor #1E293B
+skinparam classBackgroundColor #0B1220
+skinparam classBorderColor #334155
+skinparam ArrowColor #94A3B8
+skinparam ArrowFontColor #CBD5E1
+skinparam stereotypeCBackgroundColor #38BDF8
+
+entity "predictions" as P {
+  *id : serial <<PK>>
+  --
+  *created_at : timestamptz
+  *model : varchar(64)
+  *label : varchar(32)
+  *confidence : float
+  *probabilities : jsonb
+  *image_sha256 : varchar(64)
+   image_filename : varchar(255)
+  *image_width : int
+  *image_height : int
+}
+
+entity "split_assignments\n(view of CSVs)" as S {
+  *filepath : text <<PK>>
+  --
+  *class : varchar(32)
+  *source_frame : varchar(64)
+  *split : enum(train,val,test)
+}
+
+entity "model_metadata\n(metadata.json)" as M {
+  *name : varchar(64) <<PK>>
+  --
+  *framework : enum(tf,torch,ensemble)
+  *test_accuracy : float
+  *best_val_accuracy : float
+  *macro_f1 : float
+  *classes : text[]
+  *trained_at : timestamptz
+}
+
+P }o--o| M : "FK on `model` —\nlogical reference"
+S }o--o| M : "training corpus\nused to fit"
+
+note bottom of P
+  Persisted in PostgreSQL.
+  Indexes: created_at DESC,
+  label, model, image_sha256.
+end note
+
+note bottom of S
+  Filesystem CSV at
+  data/splits/{train,val,test}.csv —
+  source of truth for train/val/test
+  membership. Group-aware on
+  source_frame to prevent leakage.
+end note
+
+note bottom of M
+  Filesystem JSON at
+  models_saved/<name>/metadata.json.
+  Read by /models and /metrics.
+end note
+
+@enduml

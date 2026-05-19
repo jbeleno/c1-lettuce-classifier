@@ -1,0 +1,63 @@
+@startuml
+!theme plain
+skinparam backgroundColor #0F172A
+skinparam shadowing false
+skinparam rectangleBackgroundColor #1E293B
+skinparam rectangleBorderColor #334155
+skinparam rectangleFontColor #F8FAFC
+skinparam ArrowColor #94A3B8
+skinparam ArrowFontColor #CBD5E1
+
+title Heterogeneous soft-voting ensemble
+
+rectangle "Image (224 x 224 x 3)" as IN #0B1220
+
+rectangle "CNN family\n(TensorFlow, CPU)" as CNN #1E293B {
+  rectangle "MobileNetV3-Small\np^(1) in R^5" as C1
+  rectangle "EfficientNet-B0\np^(2) in R^5" as C2 #38BDF8
+  rectangle "ResNet50\np^(3) in R^5" as C3
+}
+
+rectangle "Transformer family\n(PyTorch, MPS/CUDA)" as TRF #1E293B {
+  rectangle "ViT-B/16\np^(4) in R^5" as T1
+  rectangle "Swin-Tiny\np^(5) in R^5" as T2 #A78BFA
+}
+
+rectangle "Soft-voting average\np_ens = (1/5) * sum_i p^(i)" as AVG #FBBF24
+
+rectangle "argmax" as ARG #0B1220
+rectangle "Final label\n+ confidence per class" as OUT #22C55E
+
+IN --> C1
+IN --> C2
+IN --> C3
+IN --> T1
+IN --> T2
+
+C1 --> AVG : p^(1)
+C2 --> AVG : p^(2)
+C3 --> AVG : p^(3)
+T1 --> AVG : p^(4)
+T2 --> AVG : p^(5)
+
+AVG --> ARG
+ARG --> OUT
+
+note right of AVG
+  Test-time probabilities are
+  precomputed and persisted to
+  test_probs.parquet during each
+  backbone's training run. The
+  ensemble script just averages
+  the 5 parquets, so it doesn't
+  need to hold 5 models in RAM.
+
+  At inference time the runtime
+  ensemble (used by FastAPI)
+  caches one predictor per
+  backbone behind an RLock and
+  computes the average on each
+  request.
+end note
+
+@enduml
