@@ -10,30 +10,53 @@ import { ProbabilityBars } from '../components/ProbabilityBars'
 import { ViewfinderUpload } from '../components/ViewfinderUpload'
 import { WebcamCapture } from '../components/WebcamCapture'
 import { ModelPicker } from '../components/ModelPicker'
+import { CropTool } from '../components/CropTool'
 
 type Source = 'upload' | 'webcam'
+
+/** Three-step flow:
+ *    select  →  framed (crop)  →  predicted
+ *  The classifier was trained on single-pod crops, so the user is asked to
+ *  frame one pod before we send anything to the backend. */
+type Stage =
+  | { kind: 'select' }
+  | { kind: 'framing'; blob: Blob; filename?: string }
 
 export function Predict() {
   const [source, setSource] = useState<Source>('upload')
   const [model, setModel] = useState<string>('')
+  const [stage, setStage] = useState<Stage>({ kind: 'select' })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [resultPreview, setResultPreview] = useState<string | null>(null)
   const [result, setResult] = useState<PredictionResponse | null>(null)
   const [latencyMs, setLatencyMs] = useState<number | null>(null)
 
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
+  useEffect(
+    () => () => { if (resultPreview) URL.revokeObjectURL(resultPreview) },
+    [resultPreview],
+  )
 
-  const submit = async (blob: Blob, filename?: string) => {
-    if (preview) URL.revokeObjectURL(preview)
-    setPreview(URL.createObjectURL(blob))
+  const startFraming = (blob: Blob, filename?: string) => {
+    setError(null)
+    setStage({ kind: 'framing', blob, filename })
+  }
+
+  const submit = async (cropped: Blob) => {
+    if (resultPreview) URL.revokeObjectURL(resultPreview)
+    setResultPreview(URL.createObjectURL(cropped))
     setError(null)
     setPending(true)
     const t0 = performance.now()
     try {
-      const res = await predict(blob, model || undefined, filename ?? 'capture.jpg')
+      const filename =
+        stage.kind === 'framing' && stage.filename
+          ? `crop-${stage.filename}`
+          : 'crop.jpg'
+      const res = await predict(cropped, model || undefined, filename)
       setResult(res)
       setLatencyMs(performance.now() - t0)
+      setStage({ kind: 'select' })
     } catch (e) {
       setResult(null)
       setLatencyMs(null)
@@ -51,23 +74,38 @@ export function Predict() {
     <div className="grid gap-6 md:grid-cols-[5fr_7fr]">
       <Card className="p-4 md:p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <SourceToggle value={source} onChange={setSource} />
+          <SourceToggle
+            value={source}
+            onChange={(s) => { setSource(s); setStage({ kind: 'select' }) }}
+            disabled={stage.kind === 'framing'}
+          />
           <ModelPicker value={model || null} onChange={setModel} />
         </div>
 
-        {source === 'upload' ? (
+        {stage.kind === 'framing' ? (
+          <CropTool
+            blob={stage.blob}
+            onConfirm={submit}
+            onCancel={() => setStage({ kind: 'select' })}
+          />
+        ) : source === 'upload' ? (
           <ViewfinderUpload
-            onPick={(f) => submit(f, f.name)}
+            onPick={(f) => startFraming(f, f.name)}
             busy={pending}
-            preview={preview}
+            preview={resultPreview}
           />
         ) : (
-          <WebcamCapture onCapture={(b) => submit(b)} />
+          <WebcamCapture onCapture={(b) => startFraming(b)} />
         )}
 
-        <p className="mt-3 font-mono text-[11px]" style={{ color: 'var(--color-ink-mute)' }}>
-          accepted: jpg, png, webp · resized server-side to 224 × 224
-        </p>
+        {stage.kind === 'select' && (
+          <p className="mt-3 font-mono text-[11px]"
+             style={{ color: 'var(--color-ink-mute)' }}>
+            jpg · png · webp · bmp · tiff · gif (no heic / avif).
+            after picking, you frame ONE pod before predicting — the model
+            classifies a single pod per request.
+          </p>
+        )}
       </Card>
 
       <ResultPane
@@ -80,10 +118,18 @@ export function Predict() {
   )
 }
 
-function SourceToggle({ value, onChange }: { value: Source; onChange: (s: Source) => void }) {
+function SourceToggle({
+  value,
+  onChange,
+  disabled = false,
+}: { value: Source; onChange: (s: Source) => void; disabled?: boolean }) {
   return (
-    <div role="tablist" aria-label="Image source" className="inline-flex rounded border overflow-hidden"
-         style={{ borderColor: 'var(--color-border)' }}>
+    <div role="tablist" aria-label="Image source"
+         className="inline-flex rounded border overflow-hidden"
+         style={{
+           borderColor: 'var(--color-border)',
+           opacity: disabled ? 0.5 : 1,
+         }}>
       {(['upload', 'webcam'] as const).map((s) => {
         const active = value === s
         return (
@@ -92,8 +138,9 @@ function SourceToggle({ value, onChange }: { value: Source; onChange: (s: Source
             role="tab"
             aria-selected={active}
             type="button"
+            disabled={disabled}
             onClick={() => onChange(s)}
-            className="px-3 py-1 font-mono text-[12px] transition-colors duration-150 cursor-pointer"
+            className="px-3 py-1 font-mono text-[12px] transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
             style={{
               background: active ? 'var(--color-surface-2)' : 'transparent',
               color: active ? 'var(--color-ink)' : 'var(--color-ink-3)',
