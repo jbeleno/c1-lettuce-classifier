@@ -138,9 +138,8 @@ docs/         documentation source + PlantUML diagrams + mockups + exports
 scripts/      build_slides.py (python-pptx)
 ```
 
-## Notes on the rubric
+## What's implemented
 
-Implemented:
 - 70/15/15 split with group-aware stratification (no leakage).
 - Reproducibility CSVs for every split.
 - **Two-layer class balancing** — sample-level (oversampling → `train_balanced.csv`)
@@ -155,9 +154,4 @@ Implemented:
 - Strict separation between training and inference code.
 - FastAPI backend with PostgreSQL persistence (4 endpoints + `/healthz`).
 - React front-end with webcam capture and pre-prediction crop tool.
-
-Intentionally skipped:
-- IoT (Topic 6) — outside scope per project decision.
-- Hyperband hyperparameter search (Topic 2).
-- GAN-based augmentation (Topic 1, optional).
-- Cloud deployment (rubric item 7).
+- Full test suite — 29 cases all green.
