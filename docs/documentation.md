@@ -21,7 +21,8 @@ abstract: |
   cost of misclassification in hydroponics. The system is served by a
   FastAPI back-end backed by PostgreSQL and follows the engineering
   best-practices required by the BEINSOF52 course: stratified
-  group-aware 70/15/15 split, class-balanced losses, five comparable
+  group-aware 70/15/15 split, two-layer class balancing (sample-level
+  oversampling + loss-level reweighting), five comparable
   algorithms, appropriate per-class metrics, explicit model
   serialization, strict separation between training and inference
   code, and a full test suite (24 cases).
@@ -575,16 +576,21 @@ green at the time of submission.
 
 The pipeline has three logical halves:
 
-1. **Ingest + preprocess + split** — turns the Roboflow export into
-   three reproducibility CSVs under ``data/splits/``. Stratified
+1. **Ingest + preprocess + split + balance** — turns the Roboflow export
+   into reproducibility CSVs under ``data/splits/``. Stratified
    group-aware k-fold *peeling* (``StratifiedGroupKFold`` from
-   scikit-learn) is used to carve out the test fold (~15 %) and then
-   the validation fold (~15 % of the original) while keeping every
-   ``source_frame`` whole.
-2. **Training** — five backbones train independently. Each one writes
-   ``model.{keras,pt}``, a ``metadata.json`` with metrics, and a
-   ``test_probs.parquet`` with the per-sample softmax outputs on the
-   shared test set.
+   scikit-learn) carves out the test fold (~15 %) and then the
+   validation fold (~15 % of the original) while keeping every
+   ``source_frame`` whole. The training split is then passed through
+   ``src/data/balance.py`` which **physically equalizes the per-class
+   row count** via seeded random oversampling, writing
+   ``data/splits/train_balanced.csv``. Validation and test are
+   intentionally left at their natural distribution so reported metrics
+   stay representative.
+2. **Training** — five backbones train independently on the balanced
+   training set. Each one writes ``model.{keras,pt}``, a
+   ``metadata.json`` with metrics, and a ``test_probs.parquet`` with
+   the per-sample softmax outputs on the shared test set.
 3. **Ensemble + serving** — the ensemble averages the parquet outputs
    offline; the FastAPI back-end loads the on-disk artifacts on demand.
 
@@ -644,6 +650,33 @@ No ``source_frame`` appears in more than one split — verified by a
 pytest assertion that runs after every split rebuild.
 
 ![Class distribution per split](../reports/class_distribution.png){ width=85% }
+
+### 13.1.1 Two-layer class balancing
+
+The class imbalance is addressed at two levels of the pipeline:
+
+1. **Sample-level (dataset)** — ``src/data/balance.py`` applies seeded
+   random oversampling to the training split, replicating samples from
+   minority classes until every class reaches the count of the
+   originally majority class (``germination``, 4,713). The output is
+   ``data/splits/train_balanced.csv`` with **23,565 rows, exactly
+   4,713 per class**. Combined with the augmentation pipeline (random
+   flip, rotation, brightness, contrast, zoom) the duplicate rows see
+   different transformations on every visit, so the effect is closer
+   to *oversampling with synthetic variation* than to literal
+   duplication.
+2. **Loss-level (objective)** — ``class_weight = "balanced"`` from
+   scikit-learn is still passed to ``model.fit`` (TensorFlow) and
+   ``nn.CrossEntropyLoss`` (PyTorch). After step 1 the per-class
+   counts are equal and the computed weights are uniform, but the
+   call site is kept so the pipeline degrades gracefully if a
+   collaborator regenerates splits without running ``make balance``.
+
+Validation and test splits are **never** balanced — keeping the
+natural distribution there means the reported macro-F1 and macro-recall
+reflect what a real operator would see in production.
+
+![Sample-level balancing — train set before vs after balance.py](../reports/class_distribution_balanced.png){ width=85% }
 
 ## 13.2 Held-out test set — model comparison
 

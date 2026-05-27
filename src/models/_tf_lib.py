@@ -70,7 +70,16 @@ def _label_to_int(label: str) -> int:
 
 
 def _read_split(name: str) -> pd.DataFrame:
-    df = pd.read_csv(SPLITS_DIR / f"{name}.csv")
+    """Reads ``data/splits/<name>.csv``. For the training split, prefers
+    ``train_balanced.csv`` (sample-level oversampled) when it exists so
+    that the dataset itself carries the same number of rows per class on
+    top of the loss-level ``class_weight`` reweighting."""
+    csv = SPLITS_DIR / f"{name}.csv"
+    if name == "train":
+        balanced = SPLITS_DIR / "train_balanced.csv"
+        if balanced.exists():
+            csv = balanced
+    df = pd.read_csv(csv)
     df["label_idx"] = df["class"].map(_label_to_int).astype(np.int32)
     return df
 

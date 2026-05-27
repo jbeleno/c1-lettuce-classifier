@@ -94,7 +94,15 @@ class LettuceDataset(Dataset):
 
 
 def _read_split(name: str) -> pd.DataFrame:
-    df = pd.read_csv(SPLITS_DIR / f"{name}.csv")
+    """Reads ``data/splits/<name>.csv``. For the training split, prefers
+    ``train_balanced.csv`` when present so the sample-level balancing
+    survives the trip into the PyTorch DataLoader."""
+    csv = SPLITS_DIR / f"{name}.csv"
+    if name == "train":
+        balanced = SPLITS_DIR / "train_balanced.csv"
+        if balanced.exists():
+            csv = balanced
+    df = pd.read_csv(csv)
     df["label_idx"] = df["class"].map(CLASSES.index).astype(np.int64)
     return df
 

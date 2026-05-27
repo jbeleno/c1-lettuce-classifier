@@ -337,7 +337,8 @@ def slide_training(prs, page, total):
         ("TF CNNs", "phase 2 — top 30 % of backbone", "4 ep · Adam(1e-5)"),
         ("TF CNNs", "BatchNorm always frozen", "preserves running stats"),
         ("Torch", "ViT-B/16 + Swin-T end-to-end", "8 ep · AdamW(3e-5)"),
-        ("All",   "class_weight balanced + augmentation", "flip · rot · brightness · contrast · zoom"),
+        ("All",   "two-layer class balancing", "sample-level oversampling (balance.py) + loss-level class_weight"),
+        ("All",   "augmentation pipeline", "flip · rotation · brightness · contrast · zoom"),
         ("All",   "mixed precision on CUDA",   "fp16 forward · fp32 softmax/loss"),
         ("All",   "checkpoints on best val_acc",   "ModelCheckpoint + EarlyStopping (patience 3)"),
     ]

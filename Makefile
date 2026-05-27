@@ -1,4 +1,4 @@
-.PHONY: install ingest preprocess split report data \
+.PHONY: install ingest preprocess split balance report data \
         train-mobilenet train-efficientnet train-resnet train-vit train-swin \
         train-cnns train-transformers train-all \
         eval-all ensemble \
@@ -22,10 +22,13 @@ preprocess:
 split:
 	$(UV) run python -m src.data.split
 
+balance:
+	$(UV) run python -m src.data.balance
+
 report:
 	$(UV) run python -m src.data.report
 
-data: ingest preprocess split report
+data: ingest preprocess split balance report
 
 # ── Training ─────────────────────────────────────────────────────
 train-mobilenet:
